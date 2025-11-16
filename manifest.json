@@ -1,0 +1,24 @@
+{
+  "short_name": "avma",
+  "name": "avma - AI Photo Editor",
+  "description": "A powerful, AI photo editor. Retouch, apply creative filters, and make professional adjustments to your images using simple text prompts.",
+  "icons": [
+    {
+      "src": "https://i.postimg.cc/RFTg0yDG/Ai-Photo-Edit.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any"
+    },
+    {
+      "src": "https://i.postimg.cc/RFTg0yDG/Ai-Photo-Edit.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#f1f5f9",
+  "display": "standalone",
+  "scope": "/",
+  "theme_color": "#ffffff"
+}
