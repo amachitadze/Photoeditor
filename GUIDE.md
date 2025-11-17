@@ -38,11 +38,11 @@ This project is configured for easy deployment to Vercel using Vite.
       - **Framework Preset:** `Vite`
       - **Build Command:** `npm run build` or `vite build`
       - **Output Directory:** `dist`
-    - Before deploying, you must add your Gemini API key. Go to the **"Environment Variables"** section.
+    - Before deploying, you must add your Gemini API key. Go to the **Settings > Environment Variables** section in your Vercel project.
     - Add a new variable with the following details:
       - **Name:** `VITE_API_KEY`
       - **Value:** Paste your actual Gemini API key here.
-    > **Important Note on API Keys:** For security, Vite requires that environment variables exposed to the browser be prefixed with `VITE_`. This key will be embedded directly into your application's public code during the build process. For a production-grade application with sensitive keys, it's recommended to use a backend proxy to keep the API key secure.
+    > **Important:** The `VITE_` prefix is required. This is a security feature of Vite to prevent accidentally exposing sensitive variables to the client-side code. Only variables prefixed with `VITE_` will be available in your application.
 
 5.  Click the **"Deploy"** button. Vercel will build and deploy your application. Once complete, you will be provided with a live URL.
 

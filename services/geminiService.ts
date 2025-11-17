@@ -76,7 +76,7 @@ export const generateEditedImage = async (
     hotspot: { x: number, y: number }
 ): Promise<string> => {
     console.log('Starting generative edit at:', hotspot);
-    // FIX: Use process.env.API_KEY as per coding guidelines.
+    // FIX: Use process.env.API_KEY per Gemini API guidelines.
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     
     const originalImagePart = await fileToPart(originalImage);
@@ -116,7 +116,7 @@ export const generateFilteredImage = async (
     filterPrompt: string,
 ): Promise<string> => {
     console.log(`Starting filter generation: ${filterPrompt}`);
-    // FIX: Use process.env.API_KEY as per coding guidelines.
+    // FIX: Use process.env.API_KEY per Gemini API guidelines.
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     
     const originalImagePart = await fileToPart(originalImage);
@@ -151,7 +151,7 @@ export const generateAdjustedImage = async (
     adjustmentPrompt: string,
 ): Promise<string> => {
     console.log(`Starting global adjustment generation: ${adjustmentPrompt}`);
-    // FIX: Use process.env.API_KEY as per coding guidelines.
+    // FIX: Use process.env.API_KEY per Gemini API guidelines.
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     
     const originalImagePart = await fileToPart(originalImage);
@@ -188,7 +188,7 @@ export const removeImageBackground = async (
     originalImage: File,
 ): Promise<string> => {
     console.log(`Starting background removal.`);
-    // FIX: Use process.env.API_KEY as per coding guidelines.
+    // FIX: Use process.env.API_KEY per Gemini API guidelines.
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     
     const originalImagePart = await fileToPart(originalImage);
@@ -224,7 +224,7 @@ export const createProfilePicture = async (
     backgroundStyle: 'blur' | 'studio' | 'gradient'
 ): Promise<string> => {
     console.log(`Starting profile picture creation with shape: ${shape}, background: ${backgroundStyle}.`);
-    // FIX: Use process.env.API_KEY as per coding guidelines.
+    // FIX: Use process.env.API_KEY per Gemini API guidelines.
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
     const backgroundPrompts = {
@@ -278,7 +278,7 @@ export const removeObjectFromImage = async (
     maskImage: File,
 ): Promise<string> => {
     console.log(`Starting object removal.`);
-    // FIX: Use process.env.API_KEY as per coding guidelines.
+    // FIX: Use process.env.API_KEY per Gemini API guidelines.
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     
     const originalImagePart = await fileToPart(originalImage);
@@ -314,7 +314,7 @@ export const enhanceImageQuality = async (
     originalImage: File,
 ): Promise<string> => {
     console.log(`Starting AI image quality enhancement.`);
-    // FIX: Use process.env.API_KEY as per coding guidelines.
+    // FIX: Use process.env.API_KEY per Gemini API guidelines.
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     
     const originalImagePart = await fileToPart(originalImage);
