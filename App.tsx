@@ -9,13 +9,13 @@ import ReactCrop, { type Crop, type PixelCrop } from 'react-image-crop';
 import { generateEditedImage, generateFilteredImage, generateAdjustedImage, removeImageBackground, createProfilePicture, enhanceImageQuality, removeObjectFromImage } from './services/geminiService';
 import Spinner from './components/Spinner';
 import FilterPanel from './components/FilterPanel';
-import AdjustmentPanel, { type ManualAdjustments } from './components/AdjustmentPanel';
+import AdjustmentPanel, { type ManualAdjustments, type ManualAdjustmentTool } from './components/AdjustmentPanel';
 import CropPanel, { type ProfileConfig } from './components/CropPanel';
 import WatermarkPanel from './components/WatermarkPanel';
 import TextPanel from './components/TextPanel';
 import DoodlePanel, { type DoodleMode } from './components/DoodlePanel';
 import RemovePanel from './components/RemovePanel';
-import { UndoIcon, RedoIcon, EyeIcon, RetouchIcon, AdjustIcon, FilterIcon, CropIcon, WatermarkIcon, ResetIcon, TextIcon, UploadIcon, DownloadIcon, PencilIcon, EditIcon, AddIcon, ZoomIcon, CloseIcon, EraserIcon } from './components/icons';
+import { UndoIcon, RedoIcon, EyeIcon, RetouchIcon, AdjustIcon, FilterIcon, CropIcon, WatermarkIcon, ResetIcon, TextIcon, UploadIcon, DownloadIcon, PencilIcon, EditIcon, AddIcon, ZoomIcon, CloseIcon, EraserIcon, ArrowLeftIcon, LineIcon, RectangleIcon, TriangleIcon, StarIcon, CheckIcon, WatermarkTextIcon, WatermarkPhotoIcon, ExposureIcon, SunIcon, ContrastIcon, HighlightsIcon, ShadowsIcon, SaturationIcon, WarmthIcon, TintIcon, VignetteIcon } from './components/icons';
 import StartScreen from './components/StartScreen';
 
 // Helper to convert a data URL string to a File object
@@ -36,7 +36,6 @@ const dataURLtoFile = (dataurl: string, filename: string): File => {
 }
 
 type Tab = 'retouch' | 'adjust' | 'filters' | 'crop' | 'watermark' | 'text' | 'doodle' | 'remove';
-type MobileNavCategory = 'retouch' | 'edit' | 'add';
 
 export interface WatermarkConfig {
   type: 'text' | 'photo';
@@ -70,6 +69,16 @@ export interface DoodleElement {
   size: number;
 }
 
+// FIX: Define a type for navigation items to ensure type safety for subTools.
+type TopLevelNavItem = {
+  id: Tab | string; // Allow string for sub-tool IDs
+  name: string;
+  icon: React.FC<{ className?: string; }>;
+  subTools?: TopLevelNavItem[];
+  value?: number | undefined; // For aspect ratios
+  displayName?: string; // For aspect ratios
+};
+
 
 const App: React.FC = () => {
   const [history, setHistory] = useState<File[]>([]);
@@ -80,7 +89,8 @@ const App: React.FC = () => {
   const [editHotspot, setEditHotspot] = useState<{ x: number, y: number } | null>(null);
   const [displayHotspot, setDisplayHotspot] = useState<{ x: number, y: number } | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>('adjust');
-  const [openedMobileCategory, setOpenedMobileCategory] = useState<MobileNavCategory | null>(null);
+  
+  const [mobileNavPath, setMobileNavPath] = useState<string[]>([]);
   
   const [crop, setCrop] = useState<Crop>();
   const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
@@ -99,6 +109,7 @@ const App: React.FC = () => {
     exposure: 0, brightness: 0, contrast: 0, highlights: 0, shadows: 0, saturation: 0, warmth: 0, tint: 0, vignette: 0,
   };
   const [manualAdjustments, setManualAdjustments] = useState<ManualAdjustments>(initialManualAdjustments);
+  const [activeManualTool, setActiveManualTool] = useState<ManualAdjustmentTool>('brightness');
 
   const initialWatermarkConfig: WatermarkConfig = {
     type: 'text', text: 'avma', imageFile: null, imageUrl: null, opacity: 0.7, position: 'bottom-right', color: '#ffffff', size: 4,
@@ -406,7 +417,7 @@ const App: React.FC = () => {
     setEditHotspot(null);
     setDisplayHotspot(null);
     setActiveTab('adjust');
-    setOpenedMobileCategory('edit');
+    setMobileNavPath([]);
     setCrop(undefined);
     setCompletedCrop(undefined);
     setTextElements([]);
@@ -1114,18 +1125,8 @@ const App: React.FC = () => {
     isDrawing.current = false;
   };
 
-  const handleMobileCategoryClick = (category: MobileNavCategory) => {
-    if (category === 'retouch') {
-        setActiveTab('retouch');
-        setOpenedMobileCategory(null);
-    } else {
-        setOpenedMobileCategory(category);
-        const firstTab = category === 'edit' ? 'adjust' : 'text';
-        setActiveTab(firstTab);
-    }
-  };
-
   const handleResetCrop = () => { setCrop(undefined); setCompletedCrop(undefined); };
+  const handleResetManualAdjustments = () => { setManualAdjustments(initialManualAdjustments); setActiveManualTool('brightness'); };
   const handleResetWatermark = () => setWatermarkConfig(initialWatermarkConfig);
   const handleResetText = () => { setTextElements([]); setSelectedTextElementId(null); };
   const handleResetDoodles = () => { setDoodleElements([]); setDrawingShapePreview(null); };
@@ -1182,23 +1183,62 @@ const App: React.FC = () => {
       </>
     );
 
-    const navConfig = {
-        retouch: [{ id: 'retouch' as Tab, name: 'Retouch', icon: RetouchIcon }],
+    const isManuallyAdjusted = Object.values(manualAdjustments).some(val => val !== 0);
+    const hasWatermarkConfig = (watermarkConfig.type === 'text' && watermarkConfig.text.trim() !== '') || (watermarkConfig.type === 'photo' && watermarkConfig.imageFile);
+    
+    const manualAdjustmentTools: TopLevelNavItem[] = [
+        { id: 'exposure', name: 'Exposure', icon: ExposureIcon },
+        { id: 'brightness', name: 'Brightness', icon: SunIcon },
+        { id: 'contrast', name: 'Contrast', icon: ContrastIcon },
+        { id: 'highlights', name: 'Highlights', icon: HighlightsIcon },
+        { id: 'shadows', name: 'Shadows', icon: ShadowsIcon },
+        { id: 'saturation', name: 'Saturation', icon: SaturationIcon },
+        { id: 'warmth', name: 'Warmth', icon: WarmthIcon },
+        { id: 'tint', name: 'Tint', icon: TintIcon },
+        { id: 'vignette', name: 'Vignette', icon: VignetteIcon },
+    ];
+    
+    const cropAspects: TopLevelNavItem[] = [
+        { id: 'free', name: 'Free', displayName: 'Free', value: undefined, icon: CropIcon }, { id: '1:1', name: 'Square', displayName: 'Square', value: 1 / 1, icon: CropIcon },
+        { id: '4:5', name: 'Portrait', displayName: 'Portrait', value: 4 / 5, icon: CropIcon }, { id: '9:16', name: 'Story', displayName: 'Story', value: 9 / 16, icon: CropIcon },
+        { id: '16:9', name: 'Wide', displayName: 'Wide', value: 16 / 9, icon: CropIcon },
+    ];
+    const profilePictureTools: TopLevelNavItem[] = [
+        { id: 'profile', name: 'Profile Pic', icon: RetouchIcon }
+    ];
+    const profileShapes: TopLevelNavItem[] = [{ id: 'circle', name: 'Circle', icon: RetouchIcon }, { id: 'square', name: 'Square', icon: RetouchIcon }];
+    const profileBackgrounds: TopLevelNavItem[] = [{ id: 'blur', name: 'Blur', icon: RetouchIcon }, { id: 'studio', name: 'Studio', icon: RetouchIcon }, { id: 'gradient', name: 'Gradient', icon: RetouchIcon }];
+
+
+    const navConfig: {
+        retouch: TopLevelNavItem[];
+        edit: TopLevelNavItem[];
+        add: TopLevelNavItem[];
+    } = {
+        retouch: [{ id: 'retouch', name: 'Retouch', icon: RetouchIcon }],
         edit: [
-            { id: 'adjust' as Tab, name: 'Adjust', icon: AdjustIcon },
-            { id: 'filters' as Tab, name: 'Filters', icon: FilterIcon },
-            { id: 'crop' as Tab, name: 'Crop', icon: CropIcon },
-            { id: 'remove' as Tab, name: 'Remove', icon: EraserIcon },
+            { id: 'adjust', name: 'Adjust', icon: AdjustIcon, subTools: manualAdjustmentTools },
+            { id: 'filters', name: 'Filters', icon: FilterIcon },
+            { id: 'crop', name: 'Crop', icon: CropIcon, subTools: [...cropAspects, ...profilePictureTools] },
+            { id: 'remove', name: 'Remove', icon: EraserIcon },
         ],
         add: [
-            { id: 'text' as Tab, name: 'Text', icon: TextIcon },
-            { id: 'doodle' as Tab, name: 'Doodle', icon: PencilIcon },
-            { id: 'watermark' as Tab, name: 'Watermark', icon: WatermarkIcon },
+            { id: 'text', name: 'Text', icon: TextIcon },
+            { id: 'doodle', name: 'Doodle', icon: PencilIcon, subTools: [
+                { id: 'freehand', name: 'Draw', icon: PencilIcon },
+                { id: 'line', name: 'Line', icon: LineIcon },
+                { id: 'rectangle', name: 'Rectangle', icon: RectangleIcon },
+                { id: 'triangle', name: 'Triangle', icon: TriangleIcon },
+                { id: 'star', name: 'Star', icon: StarIcon },
+            ]},
+            { id: 'watermark', name: 'Watermark', icon: WatermarkIcon, subTools: [
+                { id: 'text', name: 'Text', icon: WatermarkTextIcon },
+                { id: 'photo', name: 'Photo', icon: WatermarkPhotoIcon },
+            ]},
         ]
     };
     
     const allNavItems = [...navConfig.retouch, ...navConfig.edit, ...navConfig.add];
-    const mobileSubNavItems = openedMobileCategory === 'edit' ? navConfig.edit : navConfig.add;
 
     const renderPanel = (tab: Tab) => {
         switch (tab) {
@@ -1207,17 +1247,17 @@ const App: React.FC = () => {
                     <p className="text-md text-slate-500 text-center">{editHotspot ? 'Great! Now describe your localized edit below.' : 'Click an area on the image to make a precise edit.'}</p>
                     <form onSubmit={(e) => { e.preventDefault(); handleGenerate(); }} className="w-full flex flex-col md:flex-row items-center gap-2">
                         <input type="text" value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder={editHotspot ? "e.g., 'change my shirt color to blue'" : "First click a point on the image"} className="flex-grow bg-white border border-slate-300 text-slate-800 rounded-lg p-4 text-base focus:ring-2 focus:ring-primary-500 focus:outline-none transition w-full disabled:cursor-not-allowed disabled:opacity-60 placeholder:text-slate-400" disabled={isLoading || !editHotspot} />
-                        <button type="submit" className="w-full md:w-auto bg-gradient-to-br from-primary-600 to-primary-500 text-white font-bold py-4 px-8 text-base rounded-lg transition-all duration-300 ease-in-out shadow-md shadow-primary-500/30 hover:shadow-lg hover:shadow-primary-500/40 hover:-translate-y-px active:scale-95 active:shadow-inner disabled:from-blue-400 disabled:to-blue-300 disabled:shadow-none disabled:cursor-not-allowed disabled:transform-none" disabled={isLoading || !prompt.trim() || !editHotspot}>Generate</button>
+                        <button type="submit" className="hidden md:block w-full md:w-auto bg-gradient-to-br from-primary-600 to-primary-500 text-white font-bold py-4 px-8 text-base rounded-lg transition-all duration-300 ease-in-out shadow-md shadow-primary-500/30 hover:shadow-lg hover:shadow-primary-500/40 hover:-translate-y-px active:scale-95 active:shadow-inner disabled:from-blue-400 disabled:to-blue-300 disabled:shadow-none disabled:cursor-not-allowed disabled:transform-none" disabled={isLoading || !prompt.trim() || !editHotspot}>Generate</button>
                     </form>
                 </div>
             );
-            case 'adjust': return <AdjustmentPanel onApplyAjustment={handleApplyAdjustment} onRemoveBackground={handleRemoveBackground} onApplyManualAdjustments={handleApplyManualAdjustments} manualAdjustments={manualAdjustments} onManualAdjustmentChange={setManualAdjustments} isLoading={isLoading} />;
+            case 'adjust': return <AdjustmentPanel onApplyAjustment={handleApplyAdjustment} onRemoveBackground={handleRemoveBackground} manualAdjustments={manualAdjustments} onManualAdjustmentChange={setManualAdjustments} isLoading={isLoading} activeManualTool={activeManualTool} onActiveManualToolChange={setActiveManualTool}/>;
             case 'filters': return <FilterPanel onApplyFilter={handleApplyFilter} onEnhanceQuality={handleEnhanceQuality} isLoading={isLoading} />;
-            case 'crop': return <CropPanel onApplyCrop={handleApplyCrop} onResetCrop={handleResetCrop} onSetAspect={setAspect} isLoading={isLoading} hasCrop={!!crop} hasCompletedCrop={!!completedCrop?.width && completedCrop.width > 0} profileConfig={profileConfig} onProfileConfigChange={setProfileConfig} onCreateProfilePic={handleCreateProfilePic} />;
-            case 'remove': return <RemovePanel brushSize={removalBrushSize} onBrushSizeChange={setRemovalBrushSize} onApplyRemove={handleApplyObjectRemoval} onResetMask={handleResetMasks} isLoading={isLoading} hasMask={removalMasks.length > 0} />;
-            case 'text': return <TextPanel textElements={textElements} selectedElementId={selectedTextElementId} onAddText={handleAddText} onSelectText={setSelectedTextElementId} onUpdateText={handleUpdateTextElement} onDeleteText={handleDeleteTextElement} onApplyText={handleApplyTextToImage} onResetText={handleResetText} isLoading={isLoading} />;
-            case 'doodle': return <DoodlePanel doodleMode={doodleMode} onDoodleModeChange={setDoodleMode} color={doodleColor} onColorChange={setDoodleColor} size={doodleSize} onSizeChange={setDoodleSize} onApplyDoodles={handleApplyDoodles} onResetDoodles={handleResetDoodles} isLoading={isLoading} hasDoodles={doodleElements.length > 0} />;
-            case 'watermark': return <WatermarkPanel config={watermarkConfig} onConfigChange={setWatermarkConfig} onApplyWatermark={handleApplyWatermark} onResetWatermark={handleResetWatermark} isLoading={isLoading}/>;
+            case 'crop': return <CropPanel profileConfig={profileConfig} onProfileConfigChange={setProfileConfig} isLoading={isLoading} onCreateProfilePic={handleCreateProfilePic} aspect={aspect} onAspectChange={setAspect} onApplyCrop={handleApplyCrop} onResetCrop={handleResetCrop} />;
+            case 'remove': return <RemovePanel brushSize={removalBrushSize} onBrushSizeChange={setRemovalBrushSize} isLoading={isLoading} onApply={handleApplyObjectRemoval} onReset={handleResetMasks} hasMasks={removalMasks.length > 0} />;
+            case 'text': return <TextPanel textElements={textElements} selectedElementId={selectedTextElementId} onAddText={handleAddText} onSelectText={setSelectedTextElementId} onUpdateText={handleUpdateTextElement} onDeleteText={handleDeleteTextElement} isLoading={isLoading} onApply={handleApplyTextToImage} onReset={handleResetText} />;
+            case 'doodle': return <DoodlePanel mode={doodleMode} onModeChange={setDoodleMode} color={doodleColor} onColorChange={setDoodleColor} size={doodleSize} onSizeChange={setDoodleSize} isLoading={isLoading} onApply={handleApplyDoodles} onReset={handleResetDoodles} />;
+            case 'watermark': return <WatermarkPanel config={watermarkConfig} onConfigChange={setWatermarkConfig} isLoading={isLoading} onApply={handleApplyWatermark} onReset={handleResetWatermark}/>;
             default: return null;
         }
     }
@@ -1228,144 +1268,297 @@ const App: React.FC = () => {
           <span className="hidden md:inline">{children}</span>
         </button>
     );
-
-    const mobileNavCategories: { id: MobileNavCategory, name: string, icon: React.FC<{className?: string}> }[] = [
-        { id: 'retouch', name: 'Retouch', icon: RetouchIcon },
-        { id: 'edit', name: 'Edit', icon: EditIcon },
-        { id: 'add', name: 'Add', icon: AddIcon },
-    ];
-    const openedMobileCatConfig = mobileNavCategories.find(c => c.id === openedMobileCategory);
-
-    return (
-      <div className="flex-1 w-full flex flex-col md:flex-row gap-4 md:p-4 overflow-y-auto pb-24 md:pb-0">
-        <div className="flex-1 flex flex-col gap-4 p-4 md:p-0">
-            <div className="bg-white/80 border border-slate-200 rounded-xl p-2 flex items-center justify-between gap-2 backdrop-blur-sm shadow-sm">
-                <div className="flex items-center gap-1 md:gap-2 flex-wrap">
-                  <TopBarButton onClick={handleUndo} disabled={!canUndo} ariaLabel="Undo" icon={UndoIcon}>Undo</TopBarButton>
-                  <TopBarButton onClick={handleRedo} disabled={!canRedo} ariaLabel="Redo" icon={RedoIcon}>Redo</TopBarButton>
-                  {canUndo && <TopBarButton onClick={handleReset} ariaLabel="Reset All Changes" icon={ResetIcon}>Reset</TopBarButton>}
-                  {canUndo && (
-                      <TopBarButton 
-                          onMouseDown={() => setIsComparing(true)} 
-                          onMouseUp={() => setIsComparing(false)} 
-                          onMouseLeave={() => setIsComparing(false)} 
-                          onTouchStart={() => setIsComparing(true)} 
-                          onTouchEnd={() => setIsComparing(false)} 
-                          ariaLabel="Compare with original" 
-                          icon={EyeIcon}>
-                          Compare
-                      </TopBarButton>
-                  )}
-                  <div className="hidden md:flex items-center gap-2 bg-white px-3 py-1 rounded-lg">
-                      <ZoomIcon className="w-4 h-4 text-slate-400" />
-                      <input type="range" min="0.2" max="3" step="0.1" value={zoom} onChange={e => setZoom(parseFloat(e.target.value))} className="w-24 h-4 bg-slate-200" />
-                      <button onClick={() => setZoom(1)} className="text-xs font-semibold hover:text-slate-900 text-slate-600">{Math.round(zoom*100)}%</button>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1 md:gap-2">
-                    <TopBarButton onClick={handleUploadNew} ariaLabel="Upload New Image" icon={UploadIcon}>Upload New</TopBarButton>
-                    <button onClick={handleDownload} className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold bg-primary-500 text-white transition-colors hover:bg-primary-600 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
-                        <DownloadIcon className="w-5 h-5 md:w-4 md:h-4" />
-                        <span className="hidden md:inline">Download</span>
-                    </button>
-                </div>
-            </div>
-
-            <div ref={imageContainerRef} className={`flex-1 flex items-center justify-center bg-slate-200/70 rounded-xl overflow-auto relative ${activeTab === 'retouch' || activeTab === 'remove' ? 'cursor-crosshair' : ''}`}
-              onClick={handleImageClick}>
-                {isLoading && (
-                    <div className="absolute inset-0 bg-white/80 z-30 flex flex-col items-center justify-center gap-4 animate-fade-in">
-                        <Spinner />
-                        <p className="text-slate-600">AI is working its magic...</p>
-                    </div>
-                )}
-                
-                <div ref={zoomableContainerRef} className="relative transition-transform duration-200" style={{ transform: `scale(${zoom})`, transformOrigin: 'top left' }}
-                    onMouseDown={handleDrawStart} onMouseMove={handleDrawMove} onMouseUp={handleDrawEnd} onMouseLeave={handleDrawEnd} onTouchStart={handleDrawStart} onTouchMove={handleDrawMove} onTouchEnd={handleDrawEnd}>
-
-                  {activeTab === 'crop' ? (
-                    <ReactCrop crop={crop} onChange={c => setCrop(c)} onComplete={c => setCompletedCrop(c)} aspect={aspect} className="flex justify-center items-center max-h-full">
-                      <img ref={imgRef} key={`crop-${currentImageUrl}`} src={currentImageUrl} alt="Crop this image" className="shadow-lg" />
-                    </ReactCrop>
-                  ) : imageDisplay }
-                  
-                  <canvas ref={doodleCanvasRef} className={`absolute top-0 left-0 w-full h-full pointer-events-none z-20 ${activeTab === 'doodle' ? 'cursor-crosshair' : ''}`}></canvas>
-                  <canvas ref={removalMaskCanvasRef} className={`absolute top-0 left-0 w-full h-full pointer-events-none z-20 ${activeTab === 'remove' ? 'cursor-crosshair' : ''}`}></canvas>
-
-                  {activeTab === 'text' && textElements.map(el => (
-                      <div key={el.id} onMouseDown={(e) => onTextDragStart(e, el.id)} className={`absolute text-center select-none cursor-move p-1 transition-all duration-100 ${selectedTextElementId === el.id ? 'border-2 border-dashed border-primary-400' : 'border-2 border-transparent hover:border-black/10'}`}
-                          style={{
-                            left: `${el.x}%`, top: `${el.y}%`, transform: 'translate(-50%, -50%)', color: el.color, fontFamily: el.fontFamily,
-                            fontSize: `clamp(0.5rem, ${el.size * 0.4}vw, 10rem)`, fontWeight: el.bold ? 'bold' : 'normal',
-                            textShadow: el.hasShadow ? '0 1px 3px rgba(0,0,0,0.4)' : 'none',
-                          }}
-                      >{el.text}</div>
-                  ))}
-                  
-                  {activeTab === 'watermark' && (
-                      <div style={getWatermarkPreviewStyles()}>
-                          {watermarkConfig.type === 'text' && watermarkConfig.text && (<span style={{opacity: watermarkConfig.opacity, color: watermarkConfig.color, fontSize: `clamp(0.5rem, ${watermarkConfig.size * 0.4}vw, 5rem)`, fontWeight: 'bold', textShadow: '0 1px 3px rgba(0,0,0,0.5)'}}>{watermarkConfig.text}</span>)}
-                          {watermarkConfig.type === 'photo' && watermarkConfig.imageUrl && (<img src={watermarkConfig.imageUrl} alt="Watermark Preview" style={{opacity: watermarkConfig.opacity, width: `${watermarkConfig.size}%`, height: 'auto'}} />)}
-                      </div>
-                  )}
-
-                  {displayHotspot && !isLoading && activeTab === 'retouch' && (
-                      <div className="absolute rounded-full w-6 h-6 bg-blue-500/50 border-2 border-white pointer-events-none -translate-x-1/2 -translate-y-1/2 z-10" style={{ left: `${displayHotspot.x}px`, top: `${displayHotspot.y}px` }}><div className="absolute inset-0 rounded-full w-6 h-6 animate-ping bg-blue-400"></div></div>
-                  )}
-                </div>
-            </div>
+    
+    // Encapsulate JSX for reuse between mobile and desktop layouts
+    const TopBar = (
+      <div className="bg-white/80 border border-slate-200 rounded-xl p-2 flex items-center justify-between gap-2 backdrop-blur-sm shadow-sm">
+        <div className="flex items-center gap-1 md:gap-2 flex-wrap">
+          <TopBarButton onClick={handleUndo} disabled={!canUndo} ariaLabel="Undo" icon={UndoIcon}>Undo</TopBarButton>
+          <TopBarButton onClick={handleRedo} disabled={!canRedo} ariaLabel="Redo" icon={RedoIcon}>Redo</TopBarButton>
+          {canUndo && <TopBarButton onClick={handleReset} ariaLabel="Reset All Changes" icon={ResetIcon}>Reset</TopBarButton>}
+          {canUndo && (
+            <TopBarButton 
+              onMouseDown={() => setIsComparing(true)} onMouseUp={() => setIsComparing(false)} onMouseLeave={() => setIsComparing(false)} 
+              onTouchStart={() => setIsComparing(true)} onTouchEnd={() => setIsComparing(false)} 
+              ariaLabel="Compare with original" icon={EyeIcon}>
+              Compare
+            </TopBarButton>
+          )}
+          <div className="hidden md:flex items-center gap-2 bg-white px-3 py-1 rounded-lg">
+            <ZoomIcon className="w-4 h-4 text-slate-400" />
+            <input type="range" min="0.2" max="3" step="0.1" value={zoom} onChange={e => setZoom(parseFloat(e.target.value))} className="w-24 h-4 bg-slate-200" />
+            <button onClick={() => setZoom(1)} className="text-xs font-semibold hover:text-slate-900 text-slate-600">{Math.round(zoom*100)}%</button>
+          </div>
         </div>
-
-        <div className="w-full md:w-[380px] md:max-h-full flex flex-col gap-4 px-4 md:px-0">
-            <div className="hidden md:flex bg-white border border-slate-200 rounded-xl p-2 items-center justify-center gap-1 backdrop-blur-sm shadow-sm">
-                {allNavItems.map(tab => (
-                    <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex-1 flex items-center justify-center gap-2 font-semibold py-2 px-3 rounded-lg transition-all duration-200 text-sm ${activeTab === tab.id ? 'bg-primary-500 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'}`}>
-                        <tab.icon className="w-4 h-4" />
-                        <span className="hidden lg:inline">{tab.name}</span>
-                    </button>
-                ))}
-            </div>
-            <div className="flex-1 md:bg-white md:border md:border-slate-200 rounded-xl md:p-4 backdrop-blur-sm flex flex-col shadow-sm">
-                {renderPanel(activeTab)}
-            </div>
+        <div className="flex items-center gap-1 md:gap-2">
+          <TopBarButton onClick={handleUploadNew} ariaLabel="Upload New Image" icon={UploadIcon}>Upload New</TopBarButton>
+          <button onClick={handleDownload} className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold bg-primary-500 text-white transition-colors hover:bg-primary-600 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+            <DownloadIcon className="w-5 h-5 md:w-4 md:h-4" />
+            <span className="hidden md:inline">Download</span>
+          </button>
         </div>
+      </div>
+    );
+    
+    const ImageDisplayArea = (
+      <div
+        ref={imageContainerRef}
+        className={`flex items-center justify-center overflow-auto relative h-full w-full ${activeTab === 'retouch' || activeTab === 'remove' ? 'cursor-crosshair' : ''}`}
+        onClick={handleImageClick}
+      >
+        {isLoading && (
+            <div className="absolute inset-0 bg-white/80 z-30 flex flex-col items-center justify-center gap-4 animate-fade-in">
+                <Spinner />
+                <p className="text-slate-600">AI is working its magic...</p>
+            </div>
+        )}
+        <div ref={zoomableContainerRef} className="relative transition-transform duration-200" style={{ transform: `scale(${zoom})`, transformOrigin: 'top left' }}
+            onMouseDown={handleDrawStart} onMouseMove={handleDrawMove} onMouseUp={handleDrawEnd} onMouseLeave={handleDrawEnd} onTouchStart={handleDrawStart} onTouchMove={handleDrawMove} onTouchEnd={handleDrawEnd}>
+          {activeTab === 'crop' ? (
+            <ReactCrop crop={crop} onChange={c => setCrop(c)} onComplete={c => setCompletedCrop(c)} aspect={aspect} className="flex justify-center items-center max-h-full">
+              <img ref={imgRef} key={`crop-${currentImageUrl}`} src={currentImageUrl} alt="Crop this image" className="shadow-lg" />
+            </ReactCrop>
+          ) : imageDisplay }
+          <canvas ref={doodleCanvasRef} className={`absolute top-0 left-0 w-full h-full pointer-events-none z-20 ${activeTab === 'doodle' ? 'cursor-crosshair' : ''}`}></canvas>
+          <canvas ref={removalMaskCanvasRef} className={`absolute top-0 left-0 w-full h-full pointer-events-none z-20 ${activeTab === 'remove' ? 'cursor-crosshair' : ''}`}></canvas>
+          {activeTab === 'text' && textElements.map(el => (
+              <div key={el.id} onMouseDown={(e) => onTextDragStart(e, el.id)} className={`absolute text-center select-none cursor-move p-1 transition-all duration-100 ${selectedTextElementId === el.id ? 'border-2 border-dashed border-primary-400' : 'border-2 border-transparent hover:border-black/10'}`}
+                  style={{ left: `${el.x}%`, top: `${el.y}%`, transform: 'translate(-50%, -50%)', color: el.color, fontFamily: el.fontFamily, fontSize: `clamp(0.5rem, ${el.size * 0.4}vw, 10rem)`, fontWeight: el.bold ? 'bold' : 'normal', textShadow: el.hasShadow ? '0 1px 3px rgba(0,0,0,0.4)' : 'none' }}>
+                {el.text}
+              </div>
+          ))}
+          {activeTab === 'watermark' && (
+              <div style={getWatermarkPreviewStyles()}>
+                  {watermarkConfig.type === 'text' && watermarkConfig.text && (<span style={{opacity: watermarkConfig.opacity, color: watermarkConfig.color, fontSize: `clamp(0.5rem, ${watermarkConfig.size * 0.4}vw, 5rem)`, fontWeight: 'bold', textShadow: '0 1px 3px rgba(0,0,0,0.5)'}}>{watermarkConfig.text}</span>)}
+                  {watermarkConfig.type === 'photo' && watermarkConfig.imageUrl && (<img src={watermarkConfig.imageUrl} alt="Watermark Preview" style={{opacity: watermarkConfig.opacity, width: `${watermarkConfig.size}%`, height: 'auto'}} />)}
+              </div>
+          )}
+          {displayHotspot && !isLoading && activeTab === 'retouch' && (
+              <div className="absolute rounded-full w-6 h-6 bg-blue-500/50 border-2 border-white pointer-events-none -translate-x-1/2 -translate-y-1/2 z-10" style={{ left: `${displayHotspot.x}px`, top: `${displayHotspot.y}px` }}><div className="absolute inset-0 rounded-full w-6 h-6 animate-ping bg-blue-400"></div></div>
+          )}
+        </div>
+      </div>
+    );
 
-        <footer className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 border-t border-slate-200 backdrop-blur-lg z-50 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
-            { openedMobileCategory ? (
-                 <nav className="flex items-center justify-between p-2 h-20">
-                    <div className="flex items-center gap-2">
-                        { openedMobileCatConfig && <div className="p-2 text-primary-500">{React.createElement(openedMobileCatConfig.icon, {className: 'w-6 h-6'})}</div> }
-                        <button onClick={() => setOpenedMobileCategory(null)} className="p-2 text-slate-500 hover:text-slate-800" aria-label="Close menu">
-                            <CloseIcon className="w-6 h-6" />
-                        </button>
-                    </div>
-                    <div className="flex items-center justify-end gap-1">
-                        {mobileSubNavItems.map(tab => (
-                            <button key={`mobile-sub-${tab.id}`} onClick={() => setActiveTab(tab.id)} className={`flex flex-col items-center justify-center gap-1 w-20 py-2 rounded-lg transition-colors ${activeTab === tab.id ? 'text-primary-500' : 'text-slate-500 hover:text-slate-800'}`}>
-                               <tab.icon className="w-5 h-5" />
-                               <span className="text-xs font-medium">{tab.name}</span>
-                            </button>
-                        ))}
-                    </div>
-                 </nav>
-            ) : (
-                <nav className="flex items-center justify-around p-1 h-20">
+    const renderMobileNav = () => {
+        const pathLevel = mobileNavPath.length;
+
+        if (pathLevel === 0) {
+            const mobileNavCategories: { id: string, name: string, icon: React.FC<{className?: string}> }[] = [
+                { id: 'retouch', name: 'Retouch', icon: RetouchIcon },
+                { id: 'edit', name: 'Edit', icon: EditIcon },
+                { id: 'add', name: 'Add', icon: AddIcon },
+            ];
+            return (
+                <nav className="flex items-center justify-around p-1 h-24 bg-white/95 border-t border-slate-200 backdrop-blur-lg">
                     {mobileNavCategories.map(cat => (
-                        <button key={`mobile-cat-${cat.id}`} onClick={() => handleMobileCategoryClick(cat.id)} className={`flex flex-col items-center justify-center gap-1 w-full h-16 rounded-lg transition-colors ${activeTab === cat.id || (openedMobileCategory === cat.id && cat.id !== 'retouch') ? 'text-primary-500 bg-primary-500/10' : 'text-slate-500 hover:text-slate-800'}`}>
+                        <button key={`mobile-cat-${cat.id}`} onClick={() => {
+                            if (cat.id === 'retouch') {
+                                setActiveTab('retouch');
+                                setMobileNavPath(['retouch']);
+                            } else {
+                                const firstTool = navConfig[cat.id as keyof typeof navConfig][0];
+                                setActiveTab(firstTool.id as Tab);
+                                setMobileNavPath([cat.id, firstTool.id]);
+                            }
+                        }} className={`flex flex-col items-center justify-center gap-1 w-full h-20 rounded-lg transition-colors text-slate-500 hover:text-slate-800`}>
                             <cat.icon className="w-6 h-6" />
                             <span className="text-xs font-medium">{cat.name}</span>
                         </button>
                     ))}
                 </nav>
-            )}
-        </footer>
-      </div>
+            );
+        }
+        
+        const handleBack = () => {
+            const newPath = mobileNavPath.slice(0, -1);
+            if (newPath.length > 0) {
+                 const newActiveTabId = newPath[newPath.length - 1];
+                 const category = newPath[0];
+                 const allTools = navConfig[category as keyof typeof navConfig] || [];
+                 const newActiveTab = allTools.find(t => t.id === newActiveTabId)
+                 if (newActiveTab) setActiveTab(newActiveTabId as Tab);
+            }
+            setMobileNavPath(newPath);
+        };
+
+        const resetActionMap: Partial<Record<Tab, { onReset: () => void, disabled: boolean }>> = {
+            'adjust': { onReset: handleResetManualAdjustments, disabled: !isManuallyAdjusted },
+            'crop': { onReset: handleResetCrop, disabled: !crop },
+            'remove': { onReset: handleResetMasks, disabled: removalMasks.length === 0 },
+            'text': { onReset: handleResetText, disabled: textElements.length === 0 },
+            'doodle': { onReset: handleResetDoodles, disabled: doodleElements.length === 0 },
+            'watermark': { onReset: handleResetWatermark, disabled: !hasWatermarkConfig },
+        };
+        const currentResetAction = resetActionMap[activeTab];
+
+        const primaryActionMap: Partial<Record<Tab, { onApply: () => void, disabled: boolean, label: string }>> = {
+            'retouch': { onApply: handleGenerate, disabled: isLoading || !prompt.trim() || !editHotspot, label: 'Generate' },
+            'adjust': { onApply: handleApplyManualAdjustments, disabled: !isManuallyAdjusted, label: 'Apply' },
+            'crop': { onApply: handleApplyCrop, disabled: !completedCrop?.width || completedCrop.width === 0, label: 'Apply' },
+            'remove': { onApply: handleApplyObjectRemoval, disabled: removalMasks.length === 0, label: 'Apply' },
+            'text': { onApply: handleApplyTextToImage, disabled: textElements.length === 0, label: 'Apply' },
+            'doodle': { onApply: handleApplyDoodles, disabled: doodleElements.length === 0, label: 'Apply' },
+            'watermark': { onApply: handleApplyWatermark, disabled: !hasWatermarkConfig, label: 'Apply' },
+        };
+        let currentPrimaryAction = primaryActionMap[activeTab];
+
+        if (activeTab === 'crop' && mobileNavPath.includes('profile')) {
+            currentPrimaryAction = { onApply: handleCreateProfilePic, disabled: isLoading, label: 'Create' };
+        }
+
+        let currentItems: TopLevelNavItem[] = [];
+        let itemClickHandler: (item: TopLevelNavItem) => void = () => {};
+        let activeItemId: string | undefined = mobileNavPath[mobileNavPath.length - 1];
+        
+        let navState = 'categories'; // categories -> tools -> subtools
+        const categoryId = mobileNavPath[0] as keyof typeof navConfig;
+        if (pathLevel > 1 && categoryId !== 'retouch') navState = 'tools';
+        const toolId = mobileNavPath[1] as Tab;
+        const tool = navConfig[categoryId]?.find(t => t.id === toolId);
+        if (pathLevel > 2 && tool?.subTools) navState = 'subtools';
+
+        switch (navState) {
+            case 'categories':
+                const category = mobileNavPath[0] as keyof typeof navConfig;
+                currentItems = navConfig[category];
+                itemClickHandler = (item) => {
+                    setActiveTab(item.id as Tab);
+                    setMobileNavPath(prev => [...prev, item.id]);
+                };
+                break;
+            case 'tools':
+            case 'subtools':
+                currentItems = tool?.subTools || [];
+                activeItemId = mobileNavPath[mobileNavPath.length-1];
+                itemClickHandler = (item) => {
+                    const newPath = [...mobileNavPath.slice(0, -1), item.id];
+                    setMobileNavPath(newPath);
+
+                    if (toolId === 'adjust') setActiveManualTool(item.id as ManualAdjustmentTool);
+                    else if (toolId === 'doodle') setDoodleMode(item.id as DoodleMode);
+                    else if (toolId === 'watermark') setWatermarkConfig(prev => ({...prev, type: item.id as 'text' | 'photo'}));
+                    else if (toolId === 'crop') {
+                        if (item.id === 'profile') {
+                           setMobileNavPath([...newPath, profileConfig.shape]);
+                        } else {
+                           setAspect(item.value);
+                        }
+                    }
+                };
+                 if (toolId === 'crop' && mobileNavPath[2] === 'profile') {
+                     if (mobileNavPath.length === 3) { // show shapes
+                        currentItems = profileShapes;
+                        activeItemId = profileConfig.shape;
+                        itemClickHandler = (item) => {
+                            setProfileConfig(p => ({...p, shape: item.id as ProfileConfig['shape']}));
+                            setMobileNavPath(prev => [...prev, item.id]);
+                        }
+                     } else { // show backgrounds
+                        currentItems = profileBackgrounds;
+                        activeItemId = profileConfig.background;
+                        itemClickHandler = (item) => {
+                             setProfileConfig(p => ({...p, background: item.id as ProfileConfig['background']}));
+                             setMobileNavPath(prev => [...prev.slice(0, -1), item.id]);
+                        }
+                     }
+                 }
+                break;
+        }
+
+        return (
+             <nav className="flex items-center gap-1 p-2 bg-white/95 border-t border-slate-200 backdrop-blur-lg h-24">
+                <button onClick={handleBack} className="p-2 text-slate-500 hover:text-slate-800 flex-shrink-0" aria-label="Back">
+                    <ArrowLeftIcon className="w-6 h-6" />
+                </button>
+                <div className="border-l border-slate-300 h-6 mx-1 flex-shrink-0"></div>
+                <div className="flex-grow flex items-center gap-1 overflow-x-auto hide-scrollbar">
+                    {currentItems.map(item => (
+                        <button key={`mobile-sub-${item.id}`} onClick={() => itemClickHandler(item)} className={`flex flex-col items-center justify-center gap-1 w-20 py-2 rounded-lg transition-colors flex-shrink-0 ${(activeItemId === item.id) ? 'text-primary-500 bg-primary-500/10' : 'text-slate-500 hover:text-slate-800'}`}>
+                            <item.icon className="w-5 h-5" />
+                            <span className="text-xs font-medium text-center">{item.name || item.displayName}</span>
+                        </button>
+                    ))}
+                </div>
+                <div className="flex items-center gap-2 pl-2 flex-shrink-0">
+                    {currentResetAction && (
+                        <button onClick={currentResetAction.onReset} disabled={isLoading || currentResetAction.disabled} className="p-3 bg-slate-100 rounded-lg text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors hover:bg-slate-200">
+                            <ResetIcon className="w-6 h-6"/>
+                        </button>
+                    )}
+                     {currentPrimaryAction && (
+                        <button onClick={currentPrimaryAction.onApply} disabled={isLoading || currentPrimaryAction.disabled} className="px-5 py-3 bg-accent-green rounded-lg text-white font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-colors hover:bg-green-600">
+                            {currentPrimaryAction.label}
+                        </button>
+                    )}
+                </div>
+            </nav>
+        );
+    }
+    
+    return (
+      <>
+        {/* =================== DESKTOP LAYOUT =================== */}
+        <div className="hidden md:flex flex-1 w-full flex-row gap-4 p-4 h-full max-h-[calc(100vh-53px)]">
+            <div className="flex-1 flex flex-col gap-4">
+                {TopBar}
+                {ImageDisplayArea}
+            </div>
+            
+            <div className="w-full md:w-[380px] max-h-full flex flex-col gap-4">
+                <div className="flex bg-white border border-slate-200 rounded-xl p-2 items-center justify-center gap-1 backdrop-blur-sm shadow-sm">
+                    {allNavItems.map(tab => (
+                        <button key={tab.id} onClick={() => setActiveTab(tab.id as Tab)} className={`flex-1 flex items-center justify-center gap-2 font-semibold py-2 px-3 rounded-lg transition-all duration-200 text-sm ${activeTab === tab.id ? 'bg-primary-500 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'}`}>
+                            <tab.icon className="w-4 h-4" />
+                            <span className="hidden lg:inline">{tab.name}</span>
+                        </button>
+                    ))}
+                </div>
+                <div className="flex-1 bg-white border border-slate-200 rounded-xl p-4 backdrop-blur-sm flex flex-col shadow-sm overflow-y-auto">
+                    {renderPanel(activeTab)}
+                </div>
+            </div>
+        </div>
+        
+        {/* =================== MOBILE LAYOUT =================== */}
+        <div className="md:hidden flex flex-col w-full h-full max-h-screen bg-slate-50">
+            {/* --- Mobile Top Bar (fixed) --- */}
+            <div className="flex-shrink-0 z-20 bg-slate-50/95 backdrop-blur-sm">
+                <div className="p-2">{TopBar}</div>
+            </div>
+            
+            {/* --- Main Scrollable Content Area --- */}
+            <div className="flex-1 relative overflow-y-auto pb-32">
+            
+                {/* --- Sticky Image Container --- */}
+                <div className="sticky top-0 z-10 bg-slate-50 p-2 pt-0">
+                    <div className="w-full aspect-square relative bg-slate-200/70 rounded-lg flex items-center justify-center overflow-hidden">
+                        {ImageDisplayArea}
+                    </div>
+                </div>
+
+                {/* --- Tool Options Panel (below the image) --- */}
+                <div className="bg-white">
+                    {mobileNavPath.length > 0 && (
+                        <div className="p-4 animate-fade-in">
+                            {renderPanel(activeTab)}
+                        </div>
+                    )}
+                </div>
+            </div>
+            
+            {/* --- Mobile Fixed Footer --- */}
+            <footer className="fixed bottom-0 left-0 right-0 z-30 shadow-[0_-2px_10px_rgba(0,0,0,0.05)] flex-shrink-0">
+                {renderMobileNav()}
+            </footer>
+        </div>
+      </>
     );
   };
   
   return (
     <div className="min-h-screen text-slate-800 flex flex-col bg-slate-50">
-      <main className={`flex-grow w-full max-w-[1600px] mx-auto flex ${currentImage ? 'flex-col' : 'items-center justify-center'}`}>
+      <main className={`flex-grow w-full max-w-[1600px] mx-auto flex ${currentImage ? '' : 'items-center justify-center'}`}>
         {renderContent()}
       </main>
     </div>

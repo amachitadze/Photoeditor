@@ -76,6 +76,16 @@ body {
     background: #94a3b8;
 }
 
+/* Hide scrollbar utility */
+.hide-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+.hide-scrollbar {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+}
+
+
 /* Custom Slider Styles */
 input[type="range"] {
   -webkit-appearance: none;

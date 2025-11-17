@@ -9,33 +9,30 @@ import { PencilIcon, LineIcon, RectangleIcon, TriangleIcon, StarIcon } from './i
 export type DoodleMode = 'freehand' | 'line' | 'rectangle' | 'triangle' | 'star';
 
 interface DoodlePanelProps {
-  doodleMode: DoodleMode;
-  onDoodleModeChange: (mode: DoodleMode) => void;
+  mode: DoodleMode;
+  onModeChange: (mode: DoodleMode) => void;
   color: string;
   onColorChange: (color: string) => void;
   size: number;
   onSizeChange: (size: number) => void;
-  onApplyDoodles: () => void;
-  onResetDoodles: () => void;
   isLoading: boolean;
-  hasDoodles: boolean;
+  onApply: () => void;
+  onReset: () => void;
 }
 
 const DoodlePanel: React.FC<DoodlePanelProps> = ({
-  doodleMode,
-  onDoodleModeChange,
+  mode,
+  onModeChange,
   color,
   onColorChange,
   size,
   onSizeChange,
-  onApplyDoodles,
-  onResetDoodles,
   isLoading,
-  hasDoodles
+  onApply,
+  onReset
 }) => {
   const colors = ['#FFFFFF', '#000000', '#EF4444', '#3B82F6', '#10B981', '#F59E0B', '#F472B6', '#8B5CF6'];
-
-  const modes: { id: DoodleMode, name: string, icon: React.FC<{className?: string}> }[] = [
+  const doodleModes: { id: DoodleMode, name: string, icon: React.FC<{className?: string}> }[] = [
     { id: 'freehand', name: 'Draw', icon: PencilIcon },
     { id: 'line', name: 'Line', icon: LineIcon },
     { id: 'rectangle', name: 'Rectangle', icon: RectangleIcon },
@@ -45,27 +42,19 @@ const DoodlePanel: React.FC<DoodlePanelProps> = ({
 
   return (
     <div className="w-full flex flex-col gap-6 animate-fade-in h-full">
-      <div className="flex-1 flex flex-col gap-6 overflow-y-auto">
-        <h3 className="text-base font-semibold text-center text-slate-500">Doodle Tool</h3>
-
-        <div>
-          <label className="text-sm font-medium text-slate-600 mb-2 block">Shape</label>
-          <div className="grid grid-cols-5 gap-2">
-            {modes.map(mode => (
-              <button
-                key={mode.id}
-                onClick={() => onDoodleModeChange(mode.id)}
-                disabled={isLoading}
-                className={`flex flex-col items-center justify-center gap-1.5 p-2 rounded-lg transition-colors duration-200 ${doodleMode === mode.id ? 'bg-primary-100 text-primary-600' : 'bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700'}`}
-                aria-label={`Select ${mode.name} tool`}
-              >
-                <mode.icon className="w-5 h-5" />
-                <span className="text-xs font-medium">{mode.name}</span>
-              </button>
-            ))}
-          </div>
+        <h3 className="text-base font-semibold text-center text-slate-500 hidden md:block">Doodle Tool</h3>
+        
+        <div className="hidden md:flex flex-col gap-2">
+            <label className="text-sm font-medium text-slate-600">Shape</label>
+            <div className="grid grid-cols-5 gap-2">
+                {doodleModes.map(m => (
+                    <button key={m.id} onClick={() => onModeChange(m.id)} className={`flex flex-col items-center justify-center gap-1 p-2 rounded-lg transition-colors ${mode === m.id ? 'bg-primary-500/10 text-primary-600' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+                        <m.icon className="w-5 h-5"/>
+                        <span className="text-xs font-medium">{m.name}</span>
+                    </button>
+                ))}
+            </div>
         </div>
-
 
         <div>
           <label className="text-sm font-medium text-slate-600 mb-2 block">Brush Color</label>
@@ -96,18 +85,11 @@ const DoodlePanel: React.FC<DoodlePanelProps> = ({
             disabled={isLoading}
           />
         </div>
-      </div>
 
-      <div className="mt-auto pt-4 border-t border-slate-200">
-        <div className="flex items-center gap-2">
-            <button onClick={onResetDoodles} className="w-full bg-slate-200 text-slate-800 font-bold py-3 px-6 rounded-lg transition-colors duration-200 ease-in-out hover:bg-slate-300 active:scale-95 text-base disabled:opacity-50 disabled:cursor-not-allowed" disabled={isLoading || !hasDoodles}>
-                Reset
-            </button>
-            <button onClick={onApplyDoodles} className="w-full bg-accent-green text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 ease-in-out shadow-md shadow-green-500/30 hover:bg-green-600 active:scale-95 active:shadow-inner text-base disabled:bg-green-500/50 disabled:shadow-none disabled:cursor-not-allowed" disabled={isLoading || !hasDoodles}>
-                Apply Changes
-            </button>
+        <div className="hidden md:flex items-center gap-2 mt-auto pt-4 border-t border-slate-200">
+            <button onClick={onReset} className="w-full bg-slate-200 text-slate-800 font-bold py-3 px-6 rounded-lg transition-colors hover:bg-slate-300 active:scale-95" disabled={isLoading}>Reset</button>
+            <button onClick={onApply} className="w-full bg-accent-green text-white font-bold py-3 px-6 rounded-lg transition-colors hover:bg-green-600 active:scale-95" disabled={isLoading}>Apply Doodles</button>
         </div>
-      </div>
     </div>
   );
 };

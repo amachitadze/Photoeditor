@@ -14,9 +14,9 @@ interface TextPanelProps {
   onSelectText: (id: string) => void;
   onUpdateText: (id: string, updates: Partial<TextElement>) => void;
   onDeleteText: (id: string) => void;
-  onApplyText: () => void;
-  onResetText: () => void;
   isLoading: boolean;
+  onApply: () => void;
+  onReset: () => void;
 }
 
 const TextPanel: React.FC<TextPanelProps> = ({
@@ -26,9 +26,9 @@ const TextPanel: React.FC<TextPanelProps> = ({
   onSelectText,
   onUpdateText,
   onDeleteText,
-  onApplyText,
-  onResetText,
   isLoading,
+  onApply,
+  onReset
 }) => {
   const selectedElement = textElements.find(el => el.id === selectedElementId);
 
@@ -135,6 +135,10 @@ const TextPanel: React.FC<TextPanelProps> = ({
                         </div>
                     </div>
                 )}
+                 <div className="hidden md:flex items-center gap-2 mt-auto pt-4 border-t border-slate-200">
+                    <button onClick={onReset} className="w-full bg-slate-200 text-slate-800 font-bold py-3 px-6 rounded-lg transition-colors hover:bg-slate-300 active:scale-95" disabled={isLoading || textElements.length === 0}>Reset</button>
+                    <button onClick={onApply} className="w-full bg-accent-green text-white font-bold py-3 px-6 rounded-lg transition-colors hover:bg-green-600 active:scale-95" disabled={isLoading || textElements.length === 0}>Apply Text</button>
+                </div>
             </div>
         ) : (
             <div className="flex-1 flex flex-col items-center justify-center text-center bg-slate-50 border-2 border-dashed border-slate-200 rounded-lg p-4">
@@ -142,17 +146,6 @@ const TextPanel: React.FC<TextPanelProps> = ({
                 <p className="text-xs text-slate-400">Click "Add Text" to get started.</p>
             </div>
         )}
-
-        <div className="mt-auto pt-4 border-t border-slate-200">
-            <div className="flex items-center gap-2">
-                <button onClick={onResetText} className="w-full bg-slate-200 text-slate-800 font-bold py-3 px-6 rounded-lg transition-colors duration-200 ease-in-out hover:bg-slate-300 active:scale-95 text-base disabled:opacity-50 disabled:cursor-not-allowed" disabled={isLoading || textElements.length === 0}>
-                    Reset
-                </button>
-                <button onClick={onApplyText} className="w-full bg-accent-green text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 ease-in-out shadow-md shadow-green-500/30 hover:bg-green-600 active:scale-95 active:shadow-inner text-base disabled:bg-green-500/50 disabled:shadow-none disabled:cursor-not-allowed" disabled={isLoading || textElements.length === 0}>
-                    Apply Changes
-                </button>
-            </div>
-        </div>
     </div>
   );
 };
