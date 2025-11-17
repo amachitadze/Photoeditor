@@ -24,6 +24,19 @@ const fileToPart = async (file: File): Promise<{ inlineData: { mimeType: string;
     return { inlineData: { mimeType, data } };
 };
 
+/**
+ * Creates and returns a GoogleGenAI client instance.
+ * Throws a detailed error if the API key is not configured.
+ */
+const getAiClient = (): GoogleGenAI => {
+    if (!process.env.API_KEY) {
+        throw new Error(
+            'API Key is missing. If deploying to Vercel, please set the VITE_API_KEY environment variable in your project settings and re-deploy.'
+        );
+    }
+    return new GoogleGenAI({ apiKey: process.env.API_KEY });
+};
+
 const handleApiResponse = (
     response: GenerateContentResponse,
     context: string // e.g., "edit", "filter", "adjustment"
@@ -76,8 +89,7 @@ export const generateEditedImage = async (
     hotspot: { x: number, y: number }
 ): Promise<string> => {
     console.log('Starting generative edit at:', hotspot);
-    // FIX: Use process.env.API_KEY per Gemini API guidelines.
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = getAiClient();
     
     const originalImagePart = await fileToPart(originalImage);
     const prompt = `You are an expert photo editor AI. Your task is to perform a natural, localized edit on the provided image based on the user's request.
@@ -116,8 +128,7 @@ export const generateFilteredImage = async (
     filterPrompt: string,
 ): Promise<string> => {
     console.log(`Starting filter generation: ${filterPrompt}`);
-    // FIX: Use process.env.API_KEY per Gemini API guidelines.
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = getAiClient();
     
     const originalImagePart = await fileToPart(originalImage);
     const prompt = `You are an expert photo editor AI. Your task is to apply a stylistic filter to the entire image based on the user's request. Do not change the composition or content, only apply the style.
@@ -151,8 +162,7 @@ export const generateAdjustedImage = async (
     adjustmentPrompt: string,
 ): Promise<string> => {
     console.log(`Starting global adjustment generation: ${adjustmentPrompt}`);
-    // FIX: Use process.env.API_KEY per Gemini API guidelines.
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = getAiClient();
     
     const originalImagePart = await fileToPart(originalImage);
     const prompt = `You are an expert photo editor AI. Your task is to perform a natural, global adjustment to the entire image based on the user's request.
@@ -188,8 +198,7 @@ export const removeImageBackground = async (
     originalImage: File,
 ): Promise<string> => {
     console.log(`Starting background removal.`);
-    // FIX: Use process.env.API_KEY per Gemini API guidelines.
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = getAiClient();
     
     const originalImagePart = await fileToPart(originalImage);
     const prompt = `You are an expert photo editor AI. Your task is to perfectly and completely remove the background from the provided image.
@@ -224,8 +233,7 @@ export const createProfilePicture = async (
     backgroundStyle: 'blur' | 'studio' | 'gradient'
 ): Promise<string> => {
     console.log(`Starting profile picture creation with shape: ${shape}, background: ${backgroundStyle}.`);
-    // FIX: Use process.env.API_KEY per Gemini API guidelines.
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = getAiClient();
 
     const backgroundPrompts = {
         blur: 'a subtle, realistic depth-of-field blur, keeping the subject in sharp focus.',
@@ -278,8 +286,7 @@ export const removeObjectFromImage = async (
     maskImage: File,
 ): Promise<string> => {
     console.log(`Starting object removal.`);
-    // FIX: Use process.env.API_KEY per Gemini API guidelines.
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = getAiClient();
     
     const originalImagePart = await fileToPart(originalImage);
     const maskImagePart = await fileToPart(maskImage);
@@ -314,8 +321,7 @@ export const enhanceImageQuality = async (
     originalImage: File,
 ): Promise<string> => {
     console.log(`Starting AI image quality enhancement.`);
-    // FIX: Use process.env.API_KEY per Gemini API guidelines.
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = getAiClient();
     
     const originalImagePart = await fileToPart(originalImage);
     const prompt = `You are an expert photo restoration and enhancement AI. Your task is to dramatically improve the quality of the provided image.

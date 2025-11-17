@@ -17,9 +17,27 @@ Here's a breakdown of the key files and directories in this project:
 - **`vite.config.ts`**: The configuration file for Vite, the build tool used by this project.
 - **`tsconfig.json`**: The configuration file for TypeScript.
 - **`vercel.json`**: Configuration file specifically for deploying the application to Vercel.
+- **`.gitignore`**: A crucial file that tells Git to ignore specific files and folders, like `node_modules` and, most importantly, `.env.local`, to prevent secret keys from being committed.
 - **`GUIDE.md`**: This guide file.
 
-## 2. Deployment Instructions
+## 2. Development & Deployment
+
+### Local Development Setup (IMPORTANT)
+
+To run the application on your local machine and fix the "API Key must be set" error, you must provide your Gemini API key locally.
+
+**Follow these steps:**
+
+1.  **Create a local environment file:** In the root directory of the project (the same folder where `package.json` is), create a new file and name it **`.env.local`**.
+2.  **Add your API key:** Open the new `.env.local` file and add the following line. Make sure to replace `YOUR_API_KEY_HERE` with your actual Gemini API key from the Google AI Studio dashboard.
+
+    ```
+    VITE_API_KEY=YOUR_API_KEY_HERE
+    ```
+
+3.  **Restart your server:** If the development server (`npm run dev`) is already running, you **must stop it** (press `Ctrl+C` in the terminal) and start it again by running `npm run dev`. Vite only loads environment variables on startup.
+
+> **Security Note:** The `.env.local` file is listed in `.gitignore`, which means it will **never** be uploaded to your Git repository. This keeps your secret API key safe and private.
 
 ### Deploying to Vercel
 
@@ -45,6 +63,30 @@ This project is configured for easy deployment to Vercel using Vite.
     > **Important:** The `VITE_` prefix is required. This is a security feature of Vite to prevent accidentally exposing sensitive variables to the client-side code. Only variables prefixed with `VITE_` will be available in your application.
 
 5.  Click the **"Deploy"** button. Vercel will build and deploy your application. Once complete, you will be provided with a live URL.
+
+### Troubleshooting
+
+#### **Error: "An API Key must be set when running in a browser"**
+
+This is the most common error and it means your Gemini API key is not accessible to the application. The fix depends on where you are running the app:
+
+**1. If you see this error on your LOCAL machine (running `npm run dev`):**
+
+*   **Did you create the `.env.local` file?** This file must be in the project's root directory (the same level as `package.json`).
+*   **Is the file named correctly?** It must be exactly `.env.local`.
+*   **Is the variable name correct?** Inside `.env.local`, the line must start with `VITE_`. It should be `VITE_API_KEY=your_key_here`.
+*   **Did you restart the server?** After creating or changing the `.env.local` file, you **must stop** your development server (`Ctrl+C`) and restart it (`npm run dev`). Vite only loads these variables at startup.
+
+**2. If you see this error on your live Vercel website:**
+
+*   This means you have not set the environment variable in your Vercel project settings.
+*   Go to your project on Vercel.
+*   Navigate to **Settings** -> **Environment Variables**.
+*   Create a **new variable**:
+    *   **Name:** `VITE_API_KEY`
+    *   **Value:** Paste your actual Gemini API key.
+*   **Important:** After adding the variable, you must **re-deploy** your project for the change to take effect. Go to the "Deployments" tab, find your latest deployment, click the menu (...) and select "Redeploy".
+
 
 ## 3. Style Reference
 
