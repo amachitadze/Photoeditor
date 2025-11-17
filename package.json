@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "build": "mkdir -p public && cp index.html manifest.json service-worker.js public/ && esbuild index.tsx --bundle --outfile=public/bundle.js --minify --sourcemap --loader:.tsx=tsx"
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
   },
   "dependencies": {
     "@google/genai": "^1.10.0",
@@ -12,6 +14,10 @@
     "react-image-crop": "^11.0.6"
   },
   "devDependencies": {
-    "esbuild": "^0.20.2"
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "typescript": "^5.5.3",
+    "vite": "^5.3.3"
   }
 }

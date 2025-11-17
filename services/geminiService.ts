@@ -76,7 +76,8 @@ export const generateEditedImage = async (
     hotspot: { x: number, y: number }
 ): Promise<string> => {
     console.log('Starting generative edit at:', hotspot);
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
+    // FIX: Use process.env.API_KEY as per coding guidelines.
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     
     const originalImagePart = await fileToPart(originalImage);
     const prompt = `You are an expert photo editor AI. Your task is to perform a natural, localized edit on the provided image based on the user's request.
@@ -115,7 +116,8 @@ export const generateFilteredImage = async (
     filterPrompt: string,
 ): Promise<string> => {
     console.log(`Starting filter generation: ${filterPrompt}`);
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
+    // FIX: Use process.env.API_KEY as per coding guidelines.
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     
     const originalImagePart = await fileToPart(originalImage);
     const prompt = `You are an expert photo editor AI. Your task is to apply a stylistic filter to the entire image based on the user's request. Do not change the composition or content, only apply the style.
@@ -149,7 +151,8 @@ export const generateAdjustedImage = async (
     adjustmentPrompt: string,
 ): Promise<string> => {
     console.log(`Starting global adjustment generation: ${adjustmentPrompt}`);
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
+    // FIX: Use process.env.API_KEY as per coding guidelines.
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     
     const originalImagePart = await fileToPart(originalImage);
     const prompt = `You are an expert photo editor AI. Your task is to perform a natural, global adjustment to the entire image based on the user's request.
@@ -185,7 +188,8 @@ export const removeImageBackground = async (
     originalImage: File,
 ): Promise<string> => {
     console.log(`Starting background removal.`);
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
+    // FIX: Use process.env.API_KEY as per coding guidelines.
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     
     const originalImagePart = await fileToPart(originalImage);
     const prompt = `You are an expert photo editor AI. Your task is to perfectly and completely remove the background from the provided image.
@@ -220,7 +224,8 @@ export const createProfilePicture = async (
     backgroundStyle: 'blur' | 'studio' | 'gradient'
 ): Promise<string> => {
     console.log(`Starting profile picture creation with shape: ${shape}, background: ${backgroundStyle}.`);
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
+    // FIX: Use process.env.API_KEY as per coding guidelines.
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
     const backgroundPrompts = {
         blur: 'a subtle, realistic depth-of-field blur, keeping the subject in sharp focus.',
@@ -273,7 +278,8 @@ export const removeObjectFromImage = async (
     maskImage: File,
 ): Promise<string> => {
     console.log(`Starting object removal.`);
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
+    // FIX: Use process.env.API_KEY as per coding guidelines.
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     
     const originalImagePart = await fileToPart(originalImage);
     const maskImagePart = await fileToPart(maskImage);
@@ -308,7 +314,8 @@ export const enhanceImageQuality = async (
     originalImage: File,
 ): Promise<string> => {
     console.log(`Starting AI image quality enhancement.`);
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
+    // FIX: Use process.env.API_KEY as per coding guidelines.
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     
     const originalImagePart = await fileToPart(originalImage);
     const prompt = `You are an expert photo restoration and enhancement AI. Your task is to dramatically improve the quality of the provided image.
