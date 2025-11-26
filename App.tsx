@@ -1467,32 +1467,40 @@ const App: React.FC = () => {
         }
 
         return (
-             <nav className="flex items-center gap-1 p-2 bg-white/95 border-t border-slate-200 backdrop-blur-lg h-24">
-                <button onClick={handleBack} className="p-2 text-slate-500 hover:text-slate-800 flex-shrink-0" aria-label="Back">
-                    <ArrowLeftIcon className="w-6 h-6" />
-                </button>
-                <div className="border-l border-slate-300 h-6 mx-1 flex-shrink-0"></div>
-                <div className="flex-grow flex items-center gap-1 overflow-x-auto hide-scrollbar">
-                    {currentItems.map(item => (
-                        <button key={`mobile-sub-${item.id}`} onClick={() => itemClickHandler(item)} className={`flex flex-col items-center justify-center gap-1 w-20 py-2 rounded-lg transition-colors flex-shrink-0 ${(activeItemId === item.id) ? 'text-primary-500 bg-primary-500/10' : 'text-slate-500 hover:text-slate-800'}`}>
-                            <item.icon className="w-5 h-5" />
-                            <span className="text-xs font-medium text-center">{item.name || item.displayName}</span>
-                        </button>
-                    ))}
-                </div>
-                <div className="flex items-center gap-2 pl-2 flex-shrink-0">
-                    {currentResetAction && (
-                        <button onClick={currentResetAction.onReset} disabled={isLoading || currentResetAction.disabled} className="p-3 bg-slate-100 rounded-lg text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors hover:bg-slate-200">
-                            <ResetIcon className="w-6 h-6"/>
-                        </button>
-                    )}
-                     {currentPrimaryAction && (
-                        <button onClick={currentPrimaryAction.onApply} disabled={isLoading || currentPrimaryAction.disabled} className="px-5 py-3 bg-accent-green rounded-lg text-white font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-colors hover:bg-green-600">
-                            {currentPrimaryAction.label}
-                        </button>
-                    )}
-                </div>
-            </nav>
+             <div className="flex flex-col bg-white/95 backdrop-blur-lg border-t border-slate-200 pb-safe">
+                {(currentResetAction || currentPrimaryAction) && (
+                    <div className="flex items-center justify-end gap-3 px-4 py-2 border-b border-slate-100 w-full">
+                        {currentResetAction && (
+                            <button onClick={currentResetAction.onReset} disabled={isLoading || currentResetAction.disabled} className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-slate-600 bg-slate-100 disabled:opacity-50 transition-colors hover:bg-slate-200 active:scale-95">
+                                <ResetIcon className="w-4 h-4"/>
+                                <span>Reset</span>
+                            </button>
+                        )}
+                         {currentPrimaryAction && (
+                            <button onClick={currentPrimaryAction.onApply} disabled={isLoading || currentPrimaryAction.disabled} className="flex items-center gap-2 px-6 py-2 rounded-lg text-sm font-bold bg-accent-green text-white disabled:opacity-50 shadow-md shadow-green-500/20 hover:bg-green-600 transition-colors active:scale-95">
+                                {currentPrimaryAction.label === 'Apply' && <CheckIcon className="w-4 h-4"/>}
+                                <span>{currentPrimaryAction.label}</span>
+                            </button>
+                        )}
+                    </div>
+                )}
+                <nav className="flex items-center gap-1 p-2 h-20 w-full overflow-hidden">
+                    <button onClick={handleBack} className="p-2 text-slate-500 hover:text-slate-800 flex-shrink-0" aria-label="Back">
+                        <ArrowLeftIcon className="w-6 h-6" />
+                    </button>
+                    <div className="border-l border-slate-300 h-6 mx-1 flex-shrink-0"></div>
+                    <div className="flex-grow flex items-center gap-1 overflow-x-auto hide-scrollbar">
+                        {currentItems.map(item => (
+                            <button key={`mobile-sub-${item.id}`} onClick={() => itemClickHandler(item)} className={`flex flex-col items-center justify-center gap-1 w-20 py-1 rounded-lg transition-colors flex-shrink-0 ${(activeItemId === item.id) ? 'text-primary-500' : 'text-slate-500 hover:text-slate-800'}`}>
+                                <div className={`p-1.5 rounded-md transition-colors ${(activeItemId === item.id) ? 'bg-primary-100' : ''}`}>
+                                    <item.icon className="w-5 h-5" />
+                                </div>
+                                <span className={`text-xs font-medium text-center ${(activeItemId === item.id) ? 'font-semibold' : ''}`}>{item.name || item.displayName}</span>
+                            </button>
+                        ))}
+                    </div>
+                </nav>
+            </div>
         );
     }
     

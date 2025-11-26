@@ -1,5 +1,3 @@
-/// <reference types="vite/client" />
-
 // This file provides type definitions for environment variables
 // that are injected into the client-side code via Vite's `define` config.
 
